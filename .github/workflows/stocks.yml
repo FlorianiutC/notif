@@ -1,0 +1,42 @@
+name: Stocks Pokemon Lille
+on:
+  workflow_dispatch:
+  # Activer seulement après validation d'au moins une source locale et du secret.
+  # schedule:
+  #   - cron: '3-58/5 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: pokemon-stock-monitor
+  cancel-in-progress: false
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests
+      - uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: stocks-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: stocks-v1-
+      - name: Verifier les stocks
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python monitor.py
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: state.json
+          key: stocks-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-stock
+          path: report.json
+          retention-days: 1
