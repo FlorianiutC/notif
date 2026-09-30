@@ -1,9 +1,13 @@
 name: Stocks Pokemon Lille
 on:
   workflow_dispatch:
-  # Activer seulement après validation d'au moins une source locale et du secret.
-  # schedule:
-  #   - cron: '3-58/5 * * * *'
+    inputs:
+      test_notification:
+        description: 'Envoyer une seule fausse notification TEST (aucun stock réel)'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '3-58/5 * * * *'
 permissions:
   contents: read
 concurrency:
@@ -15,27 +19,51 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+      - name: Verifier si une source de stock est configuree
+        id: scope
+        env:
+          DEMO: ${{ inputs.test_notification || false }}
+        run: |
+          python - <<'PY'
+          import json, os
+          active = bool(json.load(open('sources.json'))['sources']) or os.environ['DEMO'] == 'true'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('active=' + str(active).lower() + '\n')
+          if not active:
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+                  f.write('Push prêt, mais aucun stock surveillé : aucune source locale validée.\n')
+          PY
       - uses: actions/setup-python@v5
+        if: steps.scope.outputs.active == 'true'
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
+        if: steps.scope.outputs.active == 'true'
       - run: python -m unittest discover -s tests
+        if: steps.scope.outputs.active == 'true'
+      - name: Envoyer une fausse alerte de demonstration
+        if: inputs.test_notification == true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python monitor.py --test-notification
       - uses: actions/cache/restore@v4
+        if: steps.scope.outputs.active == 'true' && inputs.test_notification != true
         with:
           path: state.json
           key: stocks-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: stocks-v1-
       - name: Verifier les stocks
+        if: steps.scope.outputs.active == 'true' && inputs.test_notification != true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python monitor.py
       - uses: actions/cache/save@v4
-        if: always()
+        if: always() && steps.scope.outputs.active == 'true' && inputs.test_notification != true
         with:
           path: state.json
           key: stocks-v1-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.scope.outputs.active == 'true' && inputs.test_notification != true
         with:
           name: rapport-stock
           path: report.json
