@@ -2,7 +2,20 @@
 
 ## État réel
 
-Base de programme prête à tester, **surveillance non opérationnelle** : aucune source locale n'est encore validée, aucun dépôt distant n'est connecté et aucun destinataire de notification n'est configuré. Une page référencée par un moteur de recherche n'est pas une preuve de stock actuel. La fiche Cultura Poster examinée redirige vers la catégorie Pokémon ; elle n'est pas activée.
+Programme publié sur GitHub ; notifications configurables par le secret `NTFY_TOPIC`. **La surveillance de stock local n'est pas opérationnelle** : aucune source locale n'est encore validée. Une page référencée par un moteur de recherche n'est pas une preuve de stock actuel. La fiche Cultura Poster examinée redirige vers la catégorie Pokémon ; elle n'est pas activée.
+
+## Agent de maintenance des liens
+
+`link_agent.py` entretient `data/links.json` à partir des pages de King Jouet, Cultura et Smyths configurées dans `link_sites.json`. C'est un agent autonome à règles, sans modèle de langage ni API d'IA payante. Il ne recherche pas sur l'ensemble du Web. Une fois publié, le workflow **Maintenance des liens Pokemon** fonctionne chaque jour à 06:17 UTC (08:17 à Paris en été, 07:17 en hiver), ou manuellement depuis Actions. Aucun crédit Codex n'est utilisé par ces exécutions Python.
+
+- Découverte de liens produits pertinents sur les listes configurées ; confirmation par le titre de la fiche ou ses données structurées Product.
+- Vérification des liens existants, mise à jour des titres et de l'URL finale sur le même domaine.
+- Suppression logique : après au moins trois réponses HTTP 404/410 réparties sur 48 heures, le lien passe en `archived`. L'historique reste récupérable ; une fiche revenue peut être réactivée.
+- Les erreurs réseau, 403/429/5xx, redirections vers une catégorie et pages non lisibles passent en `unknown`, sans suppression. Une indisponibilité de produit n'est pas un lien mort.
+- Respect de robots.txt, cadence limitée, au plus 36 requêtes réseau et 24 contrôles produit par passage. La couverture n'est pas exhaustive ; JavaScript, protections anti-bot et pagination peuvent limiter la découverte. Le résumé Actions indique les sites accessibles.
+- Une notification ntfy signale un changement du **catalogue**, sans affirmer de stock local. Le catalogue n'active jamais automatiquement une source de `sources.json` : le magasin lillois et son stock doivent être validés séparément.
+
+Le workflow écrit uniquement le catalogue avec l'identité technique de GitHub Actions ; le secret ntfy n'est jamais enregistré dans les fichiers, caches ou messages de diagnostic. Les titres et URLs publics des boutiques sont enregistrés. GitHub peut désactiver la planification après 60 jours sans activité ; contrôler périodiquement l'onglet Actions. Les notifications de changement ne sont pas réessayées si leur envoi échoue après la mise à jour du catalogue.
 
 Périmètre : produits français scellés de l'extension 30e Anniversaire, coffrets, bundles, duopacks, tripacks, ETB, UPC, mini-tins et Pokébox. Un stock d'entrepôt ou une livraison en magasin ne prouve pas un stock en rayon.
 

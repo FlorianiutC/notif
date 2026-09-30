@@ -1,0 +1,30 @@
+{
+  "max_requests": 36,
+  "max_product_checks": 24,
+  "sites": [
+    {
+      "id": "king-jouet",
+      "host": "www.king-jouet.com",
+      "seeds": [
+        "https://www.king-jouet.com/jeux-jouets/marque-asmodee/Pokemon/page1.htm",
+        "https://www.king-jouet.com/pokemon-30-ans-tcg.htm"
+      ],
+      "product_path": "^/jeu-jouet/.*/ref-[0-9]+-",
+      "listing_path": "^/jeux-jouets/marque-asmodee/Pokemon/page[0-9]+\\.htm$"
+    },
+    {
+      "id": "cultura",
+      "host": "www.cultura.com",
+      "seeds": ["https://www.cultura.com/cartes-a-jouer/cartes-pokemon.html"],
+      "product_path": "^/p-",
+      "listing_path": "^/cartes-a-jouer/cartes-pokemon\\.html$"
+    },
+    {
+      "id": "smyths",
+      "host": "www.smythstoys.com",
+      "seeds": ["https://www.smythstoys.com/fr/fr-fr/jouets/figurines/figurines-pokemon/c/SM13010103"],
+      "product_path": "^/fr/fr-fr/.*/p/[0-9]+$",
+      "listing_path": "^/fr/fr-fr/jouets/figurines/figurines-pokemon/c/SM13010103$"
+    }
+  ]
+}
