@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from monitor import classify, observe, notify
+from monitor import classify, observe, notify, alert_label, validate
 
 
 class StockTests(unittest.TestCase):
@@ -43,14 +43,32 @@ class StockTests(unittest.TestCase):
         self.assertEqual(push.call_count, 2)
 
     @patch('monitor.notify')
-    def test_unknown_and_preorder_do_not_alert(self, push):
+    def test_unknown_does_not_alert_and_preorder_is_separate(self, push):
         self.source['url'] = 'https://example.org/product'
         previous = {'status': 'available'}
         current, status, _ = observe(self.source, '<h1>Erreur réseau</h1>', previous)
         self.assertEqual(current, previous)
         self.assertEqual(status, 'unknown')
-        observe(self.source, self.page('Précommande'), previous)
         push.assert_not_called()
+        preorder, _, _ = observe(self.source, self.page('Précommande'), previous)
+        observe(self.source, self.page('Précommande'), preorder)
+        self.assertEqual(push.call_count, 1)
+        self.assertEqual(push.call_args.kwargs['status'], 'preorder')
+        observe(self.source, self.page('Disponible'), preorder)
+        self.assertEqual(push.call_count, 2)
+
+    def test_alert_colors_distinguish_channel_and_preorder(self):
+        self.assertEqual(alert_label({}, 'available'), '🟢 Achat en magasin')
+        self.assertEqual(alert_label({'channel': 'online'}, 'available'), '🔵 Achat en ligne')
+        for channel in ('online', 'store'):
+            self.assertEqual(alert_label({'channel': channel}, 'preorder'), '🟠 Précommande')
+
+    def test_online_requires_its_own_validation(self):
+        source = dict(self.source, id='test', url='https://example.org/p', channel='online', local_stock_verified=True)
+        with self.assertRaises(ValueError):
+            validate(source)
+        source['online_stock_verified'] = True
+        validate(source)
 
     @patch('monitor.notify')
     def test_price_change_alerts_only_when_available(self, push):
