@@ -1,5 +1,6 @@
 """Contrôle prudent de pages produit affichant explicitement un stock local."""
 import json
+import argparse
 import os
 import re
 import unicodedata
@@ -62,17 +63,49 @@ def fetch(source):
         return body.decode(response.headers.get_content_charset() or "utf-8", errors="replace")
 
 
-def notify(source, status):
+def notify(source, status="available", price=None, test=False):
     topic = os.environ.get("NTFY_TOPIC", "")
     if not re.fullmatch(r"[A-Za-z0-9_-]{24,128}", topic):
         raise ValueError("Configurer NTFY_TOPIC avec un nom aléatoire d'au moins 24 caractères")
-    message = f"{'Disponible' if status == 'available' else 'Précommande'} : {source['product']}\n{source['store']}\n{source['url']}"
-    request = Request("https://ntfy.sh/" + topic, data=message.encode(), headers={
-        "Title": "Pokemon - stock local", "Click": source["url"],
-        "Content-Type": "text/plain; charset=utf-8",
+    message = f"📦 {source['product']}\n📍 {source['store']}\n✅ En stock"
+    if price:
+        message += f"\n💶 {price}"
+    if test:
+        message = "🧪 TEST — STOCK FICTIF\n" + message + "\nSimulation uniquement : aucune disponibilité réelle confirmée."
+    else:
+        message += "\nDisponibilité constatée sur le site ; elle peut changer."
+    payload = {"topic": topic, "title": "TEST — Alerte Pokémon" if test else "Pokémon — disponible en magasin",
+               "message": message, "click": source["url"], "tags": ["test_tube" if test else "shopping_cart"]}
+    request = Request("https://ntfy.sh", data=json.dumps(payload).encode(), headers={
+        "Content-Type": "application/json",
     }, method="POST")
     with urlopen(request, timeout=20) as response:
         response.read()
+
+
+def observe(source, html, previous):
+    status, detail = classify(html, source)
+    if status == "unknown":
+        return previous, status, detail
+    price = None
+    if source.get("price_selector"):
+        scope = BeautifulSoup(html, "html.parser").select_one(source["scope_selector"])
+        prices = scope.select(source["price_selector"])
+        if len(prices) != 1 or not prices[0].get_text(strip=True):
+            return previous, "unknown", "Prix suivi absent ou ambigu"
+        price = prices[0].get_text(" ", strip=True)
+    current = {"status": status, "identity": [source["url"], source["store"], source["product"]], "price": price}
+    # Seules les offres en stock déclenchent un push, y compris un changement de prix suivi.
+    if status == "available" and current != previous:
+        notify(source, price=price)
+    return current, status, detail
+
+
+def test_notification():
+    notify({"product": "Coffret Nymphali-ex — Pokémon 30 ans",
+            "store": "Métropole lilloise — magasin fictif",
+            "url": "https://www.king-jouet.com/pokemon-30-ans-tcg.htm"}, test=True)
+    print("Notification TEST acceptée par ntfy. Réception sur le téléphone à confirmer.")
 
 
 def main():
@@ -90,17 +123,12 @@ def main():
     for source in sources:
         key = source["id"]
         try:
-            status, detail = classify(fetch(source), source)
+            current, status, detail = observe(source, fetch(source), state.get(key, {}))
             if status == "unknown":
                 errors += 1
             else:
-                previous = state.get(key, {})
-                identity = [source["url"], source["store"], source["product"]]
-                changed = previous.get("status") != status or previous.get("identity") != identity
-                if changed and status in {"available", "preorder"}:
-                    notify(source, status)
                 # Ne sauvegarder une alerte qu'après confirmation de son envoi.
-                state[key] = {"status": status, "identity": identity}
+                state[key] = current
             report["results"].append({"id": key, "status": status, "detail": detail})
         except Exception as error:
             errors += 1
@@ -119,4 +147,14 @@ def main():
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test-notification", action="store_true")
+    arguments = parser.parse_args()
+    if arguments.test_notification:
+        try:
+            test_notification()
+        except Exception as error:
+            print("Échec du test ntfy : " + type(error).__name__)
+            raise SystemExit(1)
+    else:
+        raise SystemExit(main())
