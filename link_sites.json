@@ -1,5 +1,5 @@
 {
-  "max_requests": 36,
+  "max_requests": 90,
   "max_product_checks": 24,
   "sites": [
     {
@@ -15,16 +15,110 @@
     {
       "id": "cultura",
       "host": "www.cultura.com",
-      "seeds": ["https://www.cultura.com/cartes-a-jouer/cartes-pokemon.html"],
+      "seeds": [
+        "https://www.cultura.com/cartes-a-jouer/cartes-pokemon.html"
+      ],
       "product_path": "^/p-",
       "listing_path": "^/cartes-a-jouer/cartes-pokemon\\.html$"
     },
     {
       "id": "smyths",
       "host": "www.smythstoys.com",
-      "seeds": ["https://www.smythstoys.com/fr/fr-fr/jouets/figurines/figurines-pokemon/c/SM13010103"],
+      "seeds": [
+        "https://www.smythstoys.com/fr/fr-fr/jouets/jeux-de-societe-et-puzzles/cartes-a-collectionner/cartes-pokemon/c/SM1301061101"
+      ],
       "product_path": "^/fr/fr-fr/.*/p/[0-9]+$",
-      "listing_path": "^/fr/fr-fr/jouets/figurines/figurines-pokemon/c/SM13010103$"
+      "listing_path": "^/fr/fr-fr/.*/c/SM1301061101$"
+    },
+    {
+      "id": "joueclub",
+      "host": "www.joueclub.fr",
+      "seeds": [
+        "https://www.joueclub.fr/contenu/pokemon-30-ans.html"
+      ],
+      "product_path": "^/pokemon/.*\\.html$",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": []
+    },
+    {
+      "id": "carrefour",
+      "host": "www.carrefour.fr",
+      "seeds": [],
+      "product_path": "^/p/",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": [
+        "https://www.carrefour.fr/p/coffret-pokemon-collection-poster-30e-anniversaire-pokemon-0196214147225"
+      ]
+    },
+    {
+      "id": "auchan",
+      "host": "www.auchan.fr",
+      "seeds": [
+        "https://www.auchan.fr/"
+      ],
+      "product_path": "/pr-",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": []
+    },
+    {
+      "id": "maison-de-la-presse",
+      "host": "www.maisondelapresse.com",
+      "seeds": [
+        "https://www.maisondelapresse.com/"
+      ],
+      "product_path": "^/.*\\.html$",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": []
+    },
+    {
+      "id": "monoprix",
+      "host": "courses.monoprix.fr",
+      "seeds": [],
+      "product_path": "^/products/",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": [
+        "https://courses.monoprix.fr/products/coffret-pok%C3%A9mon-30e-anniversaire-amphinobi-ex/MPX_6951622"
+      ]
+    },
+    {
+      "id": "intermarche",
+      "host": "www.intermarche.com",
+      "seeds": [
+        "https://www.intermarche.com/"
+      ],
+      "product_path": "^/produit/",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": []
+    },
+    {
+      "id": "la-grande-recre",
+      "host": "www.lagranderecre.fr",
+      "seeds": [
+        "https://www.lagranderecre.fr/cartes-a-collectionner/"
+      ],
+      "product_path": "^/.*\\.html$",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": []
+    },
+    {
+      "id": "amazon",
+      "host": "www.amazon.fr",
+      "seeds": [
+        "https://www.amazon.fr/"
+      ],
+      "product_path": "/(?:dp|gp/product)/[A-Z0-9]{10}",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": []
+    },
+    {
+      "id": "fnac",
+      "host": "www.fnac.com",
+      "seeds": [],
+      "product_path": "/a[0-9]+/w-4$",
+      "listing_path": "(?i).*(?:pokemon|cartes-a-collectionner).*",
+      "product_seeds": [
+        "https://www.fnac.com/Cartes-a-collectionner-Pokemon-30A-Coffret-Nymphali-ex/a23200275/w-4"
+      ]
     }
   ]
 }

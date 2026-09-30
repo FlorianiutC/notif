@@ -23,8 +23,17 @@ def validate(source):
             raise ValueError(f"Champ requis : {key}")
     if urlparse(source["url"]).scheme != "https":
         raise ValueError("URL HTTPS requise")
-    if source.get("local_stock_verified") is not True:
+    channel = source.get("channel", "store")
+    if channel not in {"store", "online"}:
+        raise ValueError("Canal inconnu")
+    if channel == "online" and source.get("online_stock_verified") is not True:
+        raise ValueError("Offre en ligne non validée")
+    if channel == "store" and source.get("local_stock_verified") is not True:
         raise ValueError("Source de stock local non validée")
+    if channel == "store" and normalize(source.get("city", "")).replace("’", "'") not in {
+        "villeneuve-d'ascq", "croix", "lille", "wasquehal"
+    }:
+        raise ValueError("Commune hors du périmètre demandé ou absente")
 
 
 def classify(html, source):
@@ -63,18 +72,29 @@ def fetch(source):
         return body.decode(response.headers.get_content_charset() or "utf-8", errors="replace")
 
 
+def alert_label(source, status):
+    if status == "preorder":
+        return "🟠 Précommande"
+    if status == "available":
+        return "🔵 Achat en ligne" if source.get("channel", "store") == "online" else "🟢 Achat en magasin"
+    return "⚪ Disponibilité non confirmée"
+
+
 def notify(source, status="available", price=None, test=False):
     topic = os.environ.get("NTFY_TOPIC", "")
     if not re.fullmatch(r"[A-Za-z0-9_-]{24,128}", topic):
         raise ValueError("Configurer NTFY_TOPIC avec un nom aléatoire d'au moins 24 caractères")
-    message = f"📦 {source['product']}\n📍 {source['store']}\n✅ En stock"
+    label = alert_label(source, status)
+    availability = "Réservation avant sortie — pas un stock disponible" if status == "preorder" else "En stock"
+    channel = "En ligne" if source.get("channel", "store") == "online" else "En magasin"
+    message = f"{label}\n📦 {source['product']}\n📍 {source['store']} — {channel}\n{availability}"
     if price:
         message += f"\n💶 {price}"
     if test:
         message = "🧪 TEST — STOCK FICTIF\n" + message + "\nSimulation uniquement : aucune disponibilité réelle confirmée."
     else:
         message += "\nDisponibilité constatée sur le site ; elle peut changer."
-    payload = {"topic": topic, "title": "TEST — Alerte Pokémon" if test else "Pokémon — disponible en magasin",
+    payload = {"topic": topic, "title": ("TEST — " if test else "") + "Pokémon — " + label,
                "message": message, "click": source["url"], "tags": ["test_tube" if test else "shopping_cart"]}
     request = Request("https://ntfy.sh", data=json.dumps(payload).encode(), headers={
         "Content-Type": "application/json",
@@ -94,10 +114,10 @@ def observe(source, html, previous):
         if len(prices) != 1 or not prices[0].get_text(strip=True):
             return previous, "unknown", "Prix suivi absent ou ambigu"
         price = prices[0].get_text(" ", strip=True)
-    current = {"status": status, "identity": [source["url"], source["store"], source["product"]], "price": price}
-    # Seules les offres en stock déclenchent un push, y compris un changement de prix suivi.
-    if status == "available" and current != previous:
-        notify(source, price=price)
+    current = {"status": status, "identity": [source["url"], source["store"], source["product"], source.get("channel", "store")], "price": price}
+    # Une précommande reste distincte d'un produit immédiatement disponible.
+    if status in {"available", "preorder"} and current != previous:
+        notify(source, status=status, price=price)
     return current, status, detail
 
 

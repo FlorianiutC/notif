@@ -28,7 +28,7 @@ def canonical(url, base, host):
 
 def relevant(title):
     text = normalize(title)
-    anniversary = re.search(r"\b30\s*(?:e|eme|th)?\s*(?:anniversaire|anniversary|celebration|ans)\b", text)
+    anniversary = re.search(r"\b30a\b|\b30\s*(?:e|eme|th)?\s*(?:anniversaire|anniversary|celebration|ans)\b", text)
     category = re.search(r"coffret|bundle|duopack|duo pack|tripack|tri pack|\betb\b|\bupc\b|mini.?tin|pokebox|tin.?box|booster|dresseur|ultra.?premium", text)
     return "pokemon" in text and bool(anniversary and category)
 
@@ -138,6 +138,9 @@ def run(config, database, client, now):
     candidates = {}
     site_health = {}
     for site in config["sites"]:
+        for url in site.get("product_seeds", []):
+            if canonical(url, url, site["host"]) and re.search(site["product_path"], urlsplit(url).path):
+                candidates[url] = site
         queue = list(site["seeds"])
         visited = set()
         site_health[site["id"]] = {"pages_read": 0, "unreadable": 0}
@@ -173,7 +176,7 @@ def run(config, database, client, now):
         if client.remaining <= 0:
             break
         existing = products.get(url)
-        site = candidates.get(url) or by_id.get(existing.get("site"))
+        site = candidates.get(url) or by_id.get((existing or {}).get("site"))
         if not site or not canonical(url, url, site["host"]):
             continue
         code, final, html = client.get(url)
