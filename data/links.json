@@ -1,7 +1,7 @@
 {
   "version": 1,
   "products": {},
-  "last_run": "2026-09-30T12:10:41.378407+00:00",
+  "last_run": "2026-10-01T13:15:34.548863+00:00",
   "sites": {
     "king-jouet": {
       "pages_read": 0,
@@ -14,6 +14,42 @@
     "smyths": {
       "pages_read": 0,
       "unreadable": 1
+    },
+    "joueclub": {
+      "pages_read": 1,
+      "unreadable": 0
+    },
+    "carrefour": {
+      "pages_read": 0,
+      "unreadable": 0
+    },
+    "auchan": {
+      "pages_read": 1,
+      "unreadable": 0
+    },
+    "maison-de-la-presse": {
+      "pages_read": 0,
+      "unreadable": 1
+    },
+    "monoprix": {
+      "pages_read": 0,
+      "unreadable": 0
+    },
+    "intermarche": {
+      "pages_read": 0,
+      "unreadable": 1
+    },
+    "la-grande-recre": {
+      "pages_read": 1,
+      "unreadable": 0
+    },
+    "amazon": {
+      "pages_read": 1,
+      "unreadable": 0
+    },
+    "fnac": {
+      "pages_read": 0,
+      "unreadable": 0
     }
   }
 }
